@@ -31,12 +31,12 @@ body {
 
 h1 {
   font-size: 2.5rem;
-  color: #4a4a6a;
+  color: #00fa9a;
   margin-bottom: 20px;
 }
 
 .get-started-button {
-  background-color: #6e60c3;
+  background-color: #8333ce;
   color: white;
   border: none;
   padding: 15px 30px;
@@ -71,4 +71,167 @@ h1 {
 .features li {
   margin: 5px 0;
   color: #4a4a6a;
+}
+
+/* SIGNUP PAGE STYLES */
+.signup-container {
+  /* Fill the viewport, use flexbox to center the content */
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-background {
+  /* Make sure the path is correct – if sea.jpg is in the public folder, use "/sea.jpg" */
+  background-image: url("/sea.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* The slightly translucent form */
+.signup-form {
+  background-color: rgba(255, 255, 255, 0.8); /* 80% opacity white */
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  /* Optional shadow for depth */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Make the react-calendar background white with a nice border radius and some padding */
+.react-calendar {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Style each day tile */
+.react-calendar__tile {
+  height: 80px;
+  border-radius: 0.25rem;
+  transition: background-color 0.3s;
+}
+
+.react-calendar__tile:hover {
+  background-color: #f0f9ff; /* light tint */
+}
+
+/* Example of coloring the active day tile */
+.react-calendar__tile--active {
+  background-color: #bfdbfe;
+}
+
+/* If you want to hide neighboring month days */
+.react-calendar__month-view__days__day--neighboringMonth {
+  opacity: 0.5;
+}
+
+
+/* Base button style */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px; /* fully rounded */
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Primary button (blue) */
+.btn-primary {
+  background-color: #2563eb; /* Blue-600 */
+  color: white;
+}
+.btn-primary:hover {
+  background-color: #1d4ed8; /* Blue-500 */
+}
+
+/* Secondary button (text style) */
+.btn-secondary {
+  background: transparent;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+}
+.btn-secondary:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+/* Danger button (red) */
+.btn-danger {
+  background-color: #dc2626; /* Red-500 */
+  color: white;
+  font-weight: 600;
+}
+.btn-danger:hover {
+  background-color: #b91c1c; /* A slightly darker red */
+}
+
+/* ============== react-calendar Overrides ============== */
+
+/* Container styles */
+.react-calendar {
+  background-color: white;
+  border: none;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Navigation (month/year + arrows) */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.react-calendar__navigation__label {
+  /* Make month/year bigger and purple */
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #7c3aed; /* Purple-600 or 700 */
+}
+
+/* Next/Prev Buttons */
+.react-calendar__navigation button {
+  background: none;
+  border: none;
+  color: #8b5cf6; /* Purple-500 */
+  margin: 0 0.25rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+.react-calendar__navigation button:hover {
+  background-color: #f3e8ff; /* Purple-50 */
+}
+
+/* Weekday names (Mon, Tue, etc.) */
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  font-weight: 600;
+  color: #7c3aed; /* Purple-600 or 700 */
+}
+
+/* Day tiles */
+.react-calendar__tile {
+  height: 60px;
+  text-align: center;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+.react-calendar__tile:hover {
+  background-color: #faf5ff; /* Purple-50 */
+}
+
+/* Marked dates or active selection (e.g., current day) */
+.react-calendar__tile--active {
+  background-color: #e9d5ff; /* Purple-200 */
+  color: #4c1d95; /* Purple-900 */
 }
