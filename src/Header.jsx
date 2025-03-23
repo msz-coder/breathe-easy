@@ -30,7 +30,7 @@ const Header = () => {
             className="text-2xl font-bold text-blue-700 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            Breathe Easy
+            PLAN IT!
           </span>
         </div>
 
