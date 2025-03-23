@@ -235,3 +235,8 @@ h1 {
   background-color: #e9d5ff; /* Purple-200 */
   color: #4c1d95; /* Purple-900 */
 }
+
+
+.current-tile:hover {
+  color: #1a202c; /* Dark text color (e.g., dark gray/black) */
+}

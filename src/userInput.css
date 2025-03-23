@@ -69,3 +69,14 @@
     font-style: italic;
   }
   
+
+  .current-day {
+    background-color: #FBBF24; /* highlight color */
+    color: #1a202c; /* dark text for contrast */
+    font-weight: bold;
+  }
+  .current-day:hover {
+    /* If you want to change hover color as well */
+    background-color: #f59e0b;
+  }
+  

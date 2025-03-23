@@ -1,151 +1,160 @@
-// src/components/TaskPage.jsx
-import React, { useState } from "react";
+// src/TaskPage.jsx
+import React, { useState, useContext } from "react";
 import Calendar from "react-calendar";
 import { useNavigate } from "react-router-dom";
-import "./App.css"; 
+import Tesseract from 'tesseract.js';
+import "./App.css";
+import { TaskContext } from "./taskcontext";
 
 const TaskPage = () => {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
+  const { tasks, setTasks } = useContext(TaskContext);
   const [scheduleFile, setScheduleFile] = useState(null);
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [newTask, setNewTask] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
 
-  const handleAddTask = (task) => {
-    if (task.trim()) {
-      setTasks([...tasks, { id: Date.now(), text: task, completed: false }]);
+  // Function to add a new task
+  const handleAddTask = () => {
+    if (newTask.trim()) {
+      const task = {
+        id: Date.now(),
+        text: newTask,
+        completed: false,
+        due: newDueDate,
+      };
+      setTasks([...tasks, task]);
+      setNewTask("");
+      setNewDueDate("");
     }
   };
 
+  // Toggle the completion status of a task
+  const handleToggleComplete = (taskId) => {
+    setTasks(
+      tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      )
+    );
+  };
+
+  // Edit a task's text and due date
+  const handleEditTask = (taskId) => {
+    const taskToEdit = tasks.find((t) => t.id === taskId);
+    const newText = prompt("Edit Task", taskToEdit.text);
+    const newDue = prompt("Edit Due Date (YYYY-MM-DDTHH:MM)", taskToEdit.due);
+    if (newText && newText.trim() !== "") {
+      setTasks(
+        tasks.map((t) =>
+          t.id === taskId ? { ...t, text: newText, due: newDue } : t
+        )
+      );
+    }
+  };
+
+  // Parse tasks from OCR text
+  const parseScheduleFromText = (ocrText) => {
+    const lines = ocrText.split("\n").map(line => line.trim()).filter(Boolean);
+    const parsedTasks = [];
+
+    // Define regex patterns for course, time, and location
+    const courseRegex = /^[A-Z]{4}\s?\d{4}-[A-Z0-9]+$/;
+    const timeRegex = /(\d{1,2}:\d{2}\s?(am|pm))\s?[-–]\s?(\d{1,2}:\d{2}\s?(am|pm))/i;
+    const locationRegex = /(KILLAM|KENNETH|LSC|MACME)[A-Z\s]*\d{3,4}/i;
+
+    // Loop through lines to find matches
+    lines.forEach((line, index) => {
+      if (courseRegex.test(line)) {
+        const course = line;
+        let time = '';
+        let location = '';
+
+        // Look ahead for time and location within the next few lines
+        for (let i = index + 1; i <= index + 4 && i < lines.length; i++) {
+          if (!time && timeRegex.test(lines[i])) {
+            time = lines[i].match(timeRegex)[0];
+          }
+          if (!location && locationRegex.test(lines[i])) {
+            location = lines[i].match(locationRegex)[0];
+          }
+        }
+
+        // Add the parsed task if both time and location are found
+        if (time && location) {
+          parsedTasks.push({
+            id: Date.now() + index,
+            text: course,
+            due: new Date().toISOString().slice(0, 16), // Simple timestamp
+            location,
+          });
+        }
+      }
+    });
+
+    return parsedTasks;
+  };
+
+  // Handle file upload and OCR processing
   const handleUploadSchedule = async () => {
     if (!scheduleFile) {
       alert("Please select a file to upload.");
       return;
     }
 
-    // Replace with the real API URL
-    const apiURL = "https://your-api.com/upload-schedule";
-    const formData = new FormData();
-    formData.append("schedule", scheduleFile);
-
     try {
-      const response = await fetch(apiURL, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      // Assume the API returns events in a suitable format
-      setCalendarEvents(data.events);
+      const { data: { text } } = await Tesseract.recognize(
+        scheduleFile,
+        'eng',
+        { logger: m => console.log(m) }
+      );
+
+      const tasksFromOCR = parseScheduleFromText(text);
+      setTasks(prevTasks => [...prevTasks, ...tasksFromOCR]);
+      alert("Upload complete!");
     } catch (error) {
-      console.error("Error uploading schedule:", error);
-      alert("Failed to upload schedule.");
+      console.error("OCR error:", error);
+      alert("Failed to process schedule via OCR.");
     }
   };
 
+  // Main component rendering
   return (
     <div className="min-h-screen pt-24 bg-gradient-to-br from-blue-100 via-purple-50 to-purple-200 p-6">
-      {/* Page Header */}
       <header className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-md mb-8 text-center">
         <h1 className="text-3xl font-bold text-purple-800 mb-2">Task Page</h1>
         <p className="text-purple-900 max-w-2xl mx-auto leading-relaxed">
-          Welcome to your Task Page! Here, you can add new tasks, and also upload a file
-          (such as a class schedule) to have its events automatically imported into your
-          calendar. Simply choose a file below and click <em>Upload</em> — it's that easy!
+          Welcome to your Task Page! Add new tasks and upload schedules.
         </p>
       </header>
 
       <main className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Add Task Section */}
+        {/* Add task section */}
         <section className="bg-white p-6 rounded-xl shadow-md">
           <h2 className="text-lg font-semibold text-purple-700 mb-4">Add a Task</h2>
-          <input
-            type="text"
-            placeholder="Enter a new task"
-            className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAddTask(e.target.value);
-                e.target.value = ""; // Clear input
-              }
-            }}
-          />
+          <div className="flex flex-col md:flex-row gap-4">
+            <input type="text" placeholder="Enter a new task" value={newTask} onChange={(e) => setNewTask(e.target.value)} className="p-3 border rounded-md w-full" />
+            <input type="datetime-local" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="p-3 border rounded-md" />
+            <button onClick={handleAddTask} className="px-4 py-2 bg-green-500 text-white rounded-md">Add Task</button>
+          </div>
         </section>
 
-        {/* Upload Schedule Section */}
+        {/* Upload schedule section */}
         <section className="bg-white p-6 rounded-xl shadow-md">
           <h2 className="text-lg font-semibold text-purple-700 mb-4">Upload Class Schedule</h2>
-          <div className="flex gap-4 items-center">
-            {/* Custom 'Choose File' button + hidden input */}
-            <label className="cursor-pointer bg-white rounded-md font-medium text-purple-700 hover:text-purple-500 border border-purple-300 px-4 py-2 shadow-sm">
-              Choose File
-              <input
-                type="file"
-                onChange={(e) => setScheduleFile(e.target.files[0])}
-                className="sr-only" // Hides the real file input
-              />
-            </label>
-            {/* Display selected file name */}
-            <span className="text-gray-600">
-              {scheduleFile ? scheduleFile.name : "No file chosen"}
-            </span>
-            {/* Upload button */}
-            <button
-              onClick={handleUploadSchedule}
-              className="p-3 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-            >
-              Upload
-            </button>
-          </div>
+          <input type="file" onChange={(e) => setScheduleFile(e.target.files[0])} />
+          <button onClick={handleUploadSchedule} className="ml-4 p-3 bg-purple-600 text-white rounded-md">Upload</button>
         </section>
 
-        {/* Calendar Section */}
+        {/* Calendar display */}
         <section className="bg-white p-6 rounded-xl shadow-md md:col-span-2">
-          <h2 className="text-lg font-semibold text-purple-700 mb-4">Calendar</h2>
-          <Calendar
-            tileContent={({ date }) => {
-              const event = calendarEvents.find(
-                (evt) => new Date(evt.date).toDateString() === date.toDateString()
-              );
-              return event ? (
-                <p className="text-sm text-purple-500">{event.title}</p>
-              ) : null;
-            }}
-            className="react-calendar p-4 rounded-md shadow-md"
-          />
+          <Calendar className="react-calendar p-4 rounded-md shadow-md" />
         </section>
 
-        {/* Task List */}
+        {/* Task list section */}
         <section className="bg-white p-6 rounded-xl shadow-md md:col-span-2">
-          <h2 className="text-lg font-semibold text-purple-700 mb-4">Task List</h2>
-          <div className="space-y-4">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-center p-4 rounded-lg shadow-sm ${
-                  task.completed ? "bg-purple-50" : "hover:bg-purple-100"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() =>
-                    setTasks((prev) =>
-                      prev.map((t) =>
-                        t.id === task.id ? { ...t, completed: !t.completed } : t
-                      )
-                    )
-                  }
-                  className="mr-4"
-                />
-                <span
-                  className={`flex-grow text-purple-800 ${
-                    task.completed ? "line-through" : ""
-                  }`}
-                >
-                  {task.text}
-                </span>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-lg font-semibold text-purple-700 mb-4">Tasks</h2>
+          {tasks.map(task => (
+            <div key={task.id}>{task.text} - Due: {task.due} - Location: {task.location}</div>
+          ))}
         </section>
       </main>
     </div>
