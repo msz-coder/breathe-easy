@@ -54,6 +54,10 @@ const TaskPage = () => {
       .replace(/\./g, "-")
       .replace(/L['`’]?SC/gi, "LSC")
       .replace(/CS[C|c]I|CSC1|ESC1|ESC/gi, "CSCI")
+      .replace(/EC0N|ECON1|ECQN/gi, "ECON")
+      .replace(/MGMT|MGMT1|MGNT/gi, "MGMT")
+      .replace(/ANAT|AN4T|ANVT/gi, "ANAT")
+      .replace(/INFO|1NFO|INFD|INPO/gi, "INFO")
       .replace(/Z1Z2|ZIZ2/gi, "2122")
       .replace(/\s{2,}/g, " ")
       .toUpperCase();
