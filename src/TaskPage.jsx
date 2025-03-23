@@ -50,59 +50,80 @@ const TaskPage = () => {
 
   const parseScheduleFromText = (ocrText) => {
     const cleanedText = ocrText
-      .replace(/[–—]/g, "-")                            // Normalize dash types
-      .replace(/\./g, "-")                              // Turn dots into dashes
-      .replace(/L['`’]?SC/gi, "LSC")                    // Fix LSC typos
-      .replace(/CS[C|c]I|CSC1|ESC1|ESC/gi, "CSCI")      // Fix OCR CSCI errors
-      .replace(/Z1Z2|ZIZ2/gi, "2122")                   // Patch CSCI 2122 issues
-      .replace(/\s{2,}/g, " ")                          // Normalize extra spaces
-      .replace(/7/, "T")
+      .replace(/[–—]/g, "-")
+      .replace(/\./g, "-")
+      .replace(/L['`’]?SC/gi, "LSC")
+      .replace(/CS[C|c]I|CSC1|ESC1|ESC/gi, "CSCI")
+      .replace(/Z1Z2|ZIZ2/gi, "2122")
+      .replace(/\s{2,}/g, " ")
       .toUpperCase();
-  
+
     const lines = cleanedText.split("\n").map(line => line.trim()).filter(Boolean);
     const parsedTasks = [];
-  
+
     const courseRegex = /(CSCI|ECON)\s?\d{3,4}[-]?[A-Z0-9]{0,3}/i;
     const timeRegex = /\d{1,2}:\d{2}\s?(AM|PM)?\s?[-]?\s?\d{1,2}:\d{2}\s?(AM|PM)?/i;
     const locationRegex = /(KILLAM|KENNETH|LSC)[A-Z\s\.'-]*\d{3,4}/i;
-  
+
+    const getNextDateForWeekday = (weekday) => {
+      const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const targetIndex = weekdays.indexOf(weekday);
+      if (targetIndex === -1) return new Date().toISOString().slice(0, 16);
+
+      const today = new Date();
+      const dayOffset = (targetIndex + 7 - today.getDay()) % 7 || 7;
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + dayOffset);
+      return targetDate.toISOString().slice(0, 16);
+    };
+
     for (let i = 0; i < lines.length; i++) {
       const courseLine = lines[i];
       const courseMatch = courseLine.match(courseRegex);
-  
+
       if (courseMatch) {
         const course = courseMatch[0].replace(/\s+/, " ");
         let time = "";
         let location = "";
-  
+        let weekday = "TBA";
+
         for (let j = i + 1; j <= i + 6 && j < lines.length; j++) {
           if (!time) {
             const potentialTime = lines[j].replace(/\./g, "-").replace(/(\d{1,2}:\d{2})\s?(\d{1,2}:\d{2})/, "$1 - $2");
             const timeMatch = potentialTime.match(timeRegex);
             if (timeMatch) time = timeMatch[0];
           }
-  
+
           if (!location && locationRegex.test(lines[j])) {
-            const match = lines[j].match(locationRegex);
-            if (match) location = match[0];
+            const locMatch = lines[j].match(locationRegex);
+            if (locMatch) location = locMatch[0];
           }
-  
+
           if (time && location) break;
         }
-  
+
+        const surrounding = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 6)).join(" ");
+        const weekdayMatch = surrounding.match(/MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY/i);
+        if (weekdayMatch) {
+          weekday = weekdayMatch[0].charAt(0).toUpperCase() + weekdayMatch[0].slice(1).toLowerCase();
+        }
+
+        const dueDate = getNextDateForWeekday(weekday);
+
         parsedTasks.push({
           id: Date.now() + parsedTasks.length,
           text: course,
-          due: new Date().toISOString().slice(0, 16),
-          location: location || "TBA",
           time: time || "TBA",
+          location: location || "TBA",
+          weekday,
+          due: dueDate,
+          completed: false,
         });
       }
     }
-  
+
     return parsedTasks;
   };
-    
 
   const handleUploadSchedule = async () => {
     if (!scheduleFile) {
@@ -111,8 +132,6 @@ const TaskPage = () => {
     }
 
     try {
-      console.log("Uploading file:", scheduleFile);
-
       const {
         data: { text },
       } = await Tesseract.recognize(scheduleFile, "eng", {
@@ -199,9 +218,32 @@ const TaskPage = () => {
             tasks.map((task) => (
               <div
                 key={task.id}
-                className="border p-4 mb-3 rounded-md shadow-sm bg-gray-50"
+                className={`border p-4 mb-3 rounded-md shadow-sm bg-gray-50 ${task.completed ? "opacity-70 line-through" : ""}`}
               >
-                <div className="font-semibold text-purple-800">{task.text}</div>
+                <div className="font-semibold text-purple-800 flex justify-between items-center">
+                  <span>
+                    {task.text}
+                    {task.weekday && (
+                      <span className="text-sm text-gray-600 ml-2">({task.weekday})</span>
+                    )}
+                  </span>
+                  <div className="space-x-2">
+                    <button
+                      onClick={() => handleEditTask(task.id)}
+                      className="px-2 py-1 bg-yellow-300 text-sm rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggleComplete(task.id)}
+                      className={`px-2 py-1 text-sm rounded ${
+                        task.completed ? "bg-green-400" : "bg-gray-300"
+                      }`}
+                    >
+                      {task.completed ? "Undo" : "Complete"}
+                    </button>
+                  </div>
+                </div>
                 <div>Time: {task.time}</div>
                 <div>Location: {task.location}</div>
                 <div>Due: {task.due}</div>
