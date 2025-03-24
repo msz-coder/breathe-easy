@@ -32,6 +32,7 @@ const Header = () => {
           >
             PLAN IT!
           </span>
+      
         </div>
 
         {/* Navigation Links */}
